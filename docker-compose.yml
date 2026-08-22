@@ -1,0 +1,26 @@
+services:
+  db:
+    image: mysql:8.4
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: pashijia
+    volumes:
+      - db_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  app:
+    build: .
+    restart: always
+    env_file: .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - uploads:/app/dist/public/uploads
+      - uploads:/app/public/uploads
+    depends_on:
+      - db
+
+volumes:
+  db_data:
+  uploads:
