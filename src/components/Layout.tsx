@@ -1,8 +1,10 @@
-import { Link, NavLink, Outlet } from "react-router";
+import { Link, NavLink, Outlet, useLocation } from "react-router";
 import logo from "@/assets/logo.png";
 import { BRAND } from "@/config";
 import { T, useLang, useT, type DictKey } from "@/i18n";
 import { trpc } from "@/providers/trpc";
+import FloatBar from "@/components/FloatBar";
+import { useEffect } from "react";
 
 const NAV: { to: string; k: DictKey }[] = [
   { to: "/species", k: "nav.species" },
@@ -54,8 +56,52 @@ function FooterText() {
   );
 }
 
-function LangToggle() {
-  const { lang, toggle } = useLang();
+// 每页独立标题（SEO）
+function PageTitle() {
+  const loc = useLocation();
+  const t = useT();
+  useEffect(() => {
+    const map: [RegExp, string][] = [
+      [/^\/species\/\d+/, `PASHIJIA — ${t("nav.species")}`],
+      [/^\/species/, `PASHIJIA — ${t("cat.title")}`],
+      [/^\/availability/, `PASHIJIA — ${t("a.title")}`],
+      [/^\/shipping/, `PASHIJIA — ${t("s.title")}`],
+      [/^\/compliance/, `PASHIJIA — ${t("c.title")}`],
+      [/^\/about/, `PASHIJIA — ${t("ab.title")}`],
+      [/^\/inquiry/, `PASHIJIA — ${t("i.title")}`],
+      [/^\/admin/, "PASHIJIA — 管理后台"],
+    ];
+    const hit = map.find(([re]) => re.test(loc.pathname));
+    document.title = hit?.[1] ?? "PASHIJIA — Licensed CITES Reptile Exporter · 爬世家";
+  }, [loc.pathname, t]);
+  return null;
+}
+
+// R10: 统计/自定义 head 代码注入（后台 settings.head_code 配置）
+function HeadCodeInjector() {
+  const q = trpc.settings.all.useQuery(undefined, { staleTime: 60_000 });
+  useEffect(() => {
+    const code = q.data?.head_code;
+    if (!code || document.getElementById("psj-head-code")) return;
+    const holder = document.createElement("div");
+    holder.id = "psj-head-code";
+    holder.style.display = "none";
+    document.body.appendChild(holder);
+    const range = document.createRange();
+    range.selectNode(holder);
+    holder.appendChild(range.createContextualFragment(code));
+    // 让 <script> 标签真正执行
+    holder.querySelectorAll("script").forEach((old) => {
+      const s = document.createElement("script");
+      for (const a of Array.from(old.attributes)) s.setAttribute(a.name, a.value);
+      s.textContent = old.textContent;
+      old.replaceWith(s);
+    });
+  }, [q.data]);
+  return null;
+}
+
+function LangToggle() {  const { lang, toggle } = useLang();
   return (
     <button
       onClick={toggle}
@@ -126,6 +172,10 @@ export default function Layout() {
       <main>
         <Outlet />
       </main>
+
+      <FloatBar />
+      <HeadCodeInjector />
+      <PageTitle />
 
       <footer className="mt-20 border-t-2 border-[#06162d] bg-[#06162d] text-white">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:grid-cols-3">

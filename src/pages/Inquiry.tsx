@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useT } from "@/i18n";
+import { useBasket } from "@/providers/basket";
 
 const inputCls =
   "w-full border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-[#c9a227]";
@@ -14,6 +15,7 @@ export default function Inquiry() {
     { id: speciesId! },
     { enabled: speciesId !== undefined }
   );
+  const basket = useBasket();
   const create = trpc.inquiries.create.useMutation();
   const [done, setDone] = useState(false);
   const [form, setForm] = useState({
@@ -21,27 +23,53 @@ export default function Inquiry() {
     email: "",
     country: "",
     buyerType: "wholesaler",
-    quantity: "",
     permitInfo: "",
     message: "",
   });
 
-  const needsPermit = !!item.data && (item.data.venomous || !!item.data.citesAppendix);
+  // 兼容旧入口 ?species=ID：自动把该物种放入询盘篮
+  useEffect(() => {
+    const d = item.data;
+    if (d && !basket.has(d.id)) {
+      basket.toggle({
+        id: d.id,
+        latinName: d.latinName,
+        chineseName: d.chineseName,
+        morph: d.morph,
+        size: d.size,
+        priceUsd: d.priceUsd,
+        showPrice: d.showPrice,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.data]);
+
+  const selected = basket.items;
 
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    const items = selected.map((i) => ({
+      speciesId: i.id,
+      label: `${i.latinName} · ${i.morph ?? "—"} · ${i.size ?? "—"}`,
+      quantity: i.quantity || undefined,
+    }));
     create.mutate(
       {
-        speciesId,
-        speciesLabel: item.data
-          ? `${item.data.latinName} · ${item.data.morph ?? ""} · ${item.data.size ?? ""}`
-          : undefined,
+        speciesId: selected[0]?.id,
+        speciesLabel: items.map((i) => i.label).join("；") || undefined,
+        quantity: undefined,
         ...form,
+        items: items.length ? items : undefined,
       },
-      { onSuccess: () => setDone(true) }
+      {
+        onSuccess: () => {
+          basket.clear();
+          setDone(true);
+        },
+      }
     );
   };
 
@@ -49,9 +77,7 @@ export default function Inquiry() {
     return (
       <div className="mx-auto max-w-xl px-4 py-24 text-center">
         <h1 className="font-serif-display text-3xl font-bold">{t("i.done")}</h1>
-        <p className="mt-4 text-sm leading-7 text-neutral-500">
-          {t("i.doneMsg")}
-        </p>
+        <p className="mt-4 text-sm leading-7 text-neutral-500">{t("i.doneMsg")}</p>
         <Link to="/species" className="mt-8 inline-block border border-[#06162d] px-6 py-2.5 text-sm font-semibold uppercase tracking-wider hover:bg-[#06162d] hover:text-white">
           {t("i.continue")}
         </Link>
@@ -62,18 +88,39 @@ export default function Inquiry() {
     <div className="mx-auto max-w-xl px-4 py-10">
       <h1 className="font-serif-display text-3xl font-bold">{t("i.title")}</h1>
 
-      {item.data && (
-        <div className="mt-4 border border-neutral-200 bg-[#f8f6ee] p-4 text-sm">
-          <span className="latin-name font-bold">{item.data.latinName}</span>
-          <span className="ml-2 text-neutral-500">
-            {item.data.chineseName} · {item.data.morph ?? "—"} · {item.data.size ?? "—"}
-          </span>
-          {needsPermit && (
-            <p className="mt-2 text-xs text-neutral-500">
-              {t("i.permitNote")}
-            </p>
-          )}
+      {/* 已选物种清单 */}
+      {selected.length > 0 ? (
+        <div className="mt-4 border border-neutral-200">
+          <div className="border-b border-neutral-200 bg-[#f8f6ee] px-4 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-600">
+            {t("i.selected")} ({selected.length})
+          </div>
+          {selected.map((i) => (
+            <div key={i.id} className="flex flex-wrap items-center gap-2 border-b border-neutral-100 px-4 py-2.5 text-sm last:border-b-0">
+              <div className="min-w-0 flex-1">
+                <span className="latin-name font-bold">{i.latinName}</span>
+                <span className="ml-2 text-neutral-500">
+                  {i.chineseName ?? ""} · {i.morph ?? "—"} · {i.size ?? "—"}
+                </span>
+                {i.showPrice && i.priceUsd && (
+                  <span className="ml-2 text-xs text-neutral-400">${i.priceUsd}</span>
+                )}
+              </div>
+              <input
+                value={i.quantity}
+                onChange={(e) => basket.setQty(i.id, e.target.value)}
+                placeholder={t("b.qtyPh")}
+                className="w-28 border border-neutral-300 px-2 py-1 text-xs outline-none focus:border-[#c9a227]"
+              />
+              <button type="button" onClick={() => basket.remove(i.id)} className="text-xs text-red-600 underline">
+                {t("b.remove")}
+              </button>
+            </div>
+          ))}
         </div>
+      ) : (
+        <p className="mt-4 border border-dashed border-neutral-300 p-4 text-sm text-neutral-500">
+          {t("i.orPick")}
+        </p>
       )}
 
       <form onSubmit={submit} className="mt-6 space-y-4">
@@ -101,15 +148,10 @@ export default function Inquiry() {
           </div>
         </div>
         <div>
-          <label className="mb-1 block text-xs uppercase tracking-wider text-neutral-500">{t("i.qty")}</label>
-          <input className={inputCls} value={form.quantity} onChange={set("quantity")} placeholder={t("i.qtyPh")} />
-        </div>
-        <div>
           <label className="mb-1 block text-xs uppercase tracking-wider text-neutral-500">
-            {t("i.permit")} {needsPermit ? "*" : t("i.ifApp")}
+            {t("i.permit")} {t("i.ifApp")}
           </label>
           <textarea
-            required={needsPermit}
             className={inputCls}
             rows={3}
             value={form.permitInfo}
@@ -127,9 +169,7 @@ export default function Inquiry() {
         >
           {create.isPending ? t("i.sending") : t("i.submit")}
         </button>
-        {create.isError && (
-          <p className="text-sm text-red-600">{t("i.fail")}</p>
-        )}
+        {create.isError && <p className="text-sm text-red-600">{t("i.fail")}</p>}
       </form>
     </div>
   );

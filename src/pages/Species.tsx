@@ -27,7 +27,7 @@ export default function Species() {
             !category ? "border-[#06162d] bg-[#06162d] text-white" : "border-neutral-300 text-neutral-500 hover:border-[#06162d]"
           }`}
         >
-          All
+          {t("cat.all")}
         </button>
         {(cats.data ?? []).map((c) => (
           <button
@@ -57,7 +57,7 @@ export default function Species() {
             className="w-48 border border-neutral-300 px-3 py-1.5 text-sm outline-none focus:border-[#c9a227]"
           />
           <button className="border border-l-0 border-neutral-300 px-3 py-1.5 text-xs uppercase tracking-wider hover:bg-neutral-100">
-            Go
+            {t("cat.go")}
           </button>
         </form>
       </div>

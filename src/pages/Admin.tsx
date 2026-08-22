@@ -3,7 +3,16 @@ import { trpc } from "@/providers/trpc";
 import { FOOTER_KEYS } from "@/components/Layout";
 import { BRAND } from "@/config";
 
-const STATUSES = ["new", "quoted", "confirmed", "paid", "shipped", "delivered", "closed"];
+const STATUSES = ["new", "quoted", "confirmed", "paid", "shipped", "delivered", "closed"] as const;
+const STATUS_CN: Record<string, string> = {
+  new: "新询盘",
+  quoted: "已报价",
+  confirmed: "已确认",
+  paid: "已付款",
+  shipped: "已发货",
+  delivered: "已送达",
+  closed: "已关闭",
+};
 
 function useAdminPassword() {
   const [pw, setPw] = useState(() => sessionStorage.getItem("psj-admin") ?? "");
@@ -18,20 +27,69 @@ const inp =
   "border border-neutral-300 px-2 py-1 text-sm outline-none focus:border-[#c9a227]";
 
 // ---------- 询盘 ----------
+type InquiryRow = {
+  id: number;
+  name: string;
+  email: string;
+  country: string;
+  buyerType: string | null;
+  quantity: string | null;
+  speciesLabel: string | null;
+  permitInfo: string | null;
+  message: string | null;
+  status: string;
+  createdAt: string | Date;
+  items: { id: number; speciesId: number | null; label: string; quantity: string | null }[];
+};
+
+function exportCsv(rows: InquiryRow[]) {
+  const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const head = ["编号", "姓名", "邮箱", "国家/地区", "买家类型", "物种明细", "许可信息", "留言", "状态", "提交时间"];
+  const lines = rows.map((q) => [
+    q.id,
+    q.name,
+    q.email,
+    q.country,
+    q.buyerType,
+    q.items.length ? q.items.map((i) => `${i.label}${i.quantity ? ` × ${i.quantity}` : ""}`).join("；") : q.speciesLabel,
+    q.permitInfo,
+    q.message,
+    STATUS_CN[q.status] ?? q.status,
+    new Date(q.createdAt).toLocaleString(),
+  ].map(esc).join(","));
+  const csv = "﻿" + [head.map(esc).join(","), ...lines].join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = `询盘-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 function InquiriesTab({ pw }: { pw: string }) {
   const utils = trpc.useUtils();
   const inquiries = trpc.inquiries.list.useQuery({ password: pw });
   const setStatus = trpc.inquiries.updateStatus.useMutation({
     onSuccess: () => utils.inquiries.list.invalidate(),
   });
+  const rows = (inquiries.data ?? []) as InquiryRow[];
   return (
     <div className="mt-6 space-y-4">
-      {(inquiries.data ?? []).length === 0 && (
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-neutral-500">共 {rows.length} 条询盘</div>
+        <button
+          onClick={() => exportCsv(rows)}
+          disabled={!rows.length}
+          className="border border-[#06162d] px-4 py-1.5 text-xs font-semibold uppercase tracking-wider hover:bg-[#06162d] hover:text-white disabled:opacity-40"
+        >
+          导出 Excel（CSV）
+        </button>
+      </div>
+      {rows.length === 0 && (
         <div className="border border-neutral-200 p-10 text-center text-sm text-neutral-400">
-          暂无询盘 No inquiries yet.
+          暂无询盘
         </div>
       )}
-      {(inquiries.data ?? []).map((q) => (
+      {rows.map((q) => (
         <div key={q.id} className="border border-neutral-200 p-4 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
@@ -41,16 +99,27 @@ function InquiriesTab({ pw }: { pw: string }) {
             <select
               value={q.status}
               onChange={(e) => setStatus.mutate({ password: pw, id: q.id, status: e.target.value })}
-              className="border border-neutral-300 px-2 py-1 text-xs uppercase"
+              className="border border-neutral-300 px-2 py-1 text-xs"
             >
               {STATUSES.map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s} value={s}>{STATUS_CN[s]}</option>
               ))}
             </select>
           </div>
-          {q.speciesLabel && <div className="mt-1 text-neutral-600">物种: {q.speciesLabel}</div>}
-          {q.quantity && <div className="text-neutral-600">数量: {q.quantity}</div>}
-          {q.permitInfo && <div className="text-neutral-600">许可: {q.permitInfo}</div>}
+          {q.items.length > 0 ? (
+            <div className="mt-2 border border-neutral-100">
+              {q.items.map((it) => (
+                <div key={it.id} className="flex items-center justify-between border-b border-neutral-100 px-3 py-1.5 text-neutral-600 last:border-b-0">
+                  <span className="latin-name">{it.label}</span>
+                  {it.quantity && <span className="ml-2 text-neutral-500">数量: {it.quantity}</span>}
+                </div>
+              ))}
+            </div>
+          ) : (
+            q.speciesLabel && <div className="mt-1 text-neutral-600">物种: {q.speciesLabel}</div>
+          )}
+          {q.quantity && !q.items.length && <div className="text-neutral-600">数量: {q.quantity}</div>}
+          {q.permitInfo && <div className="mt-1 text-neutral-600">许可: {q.permitInfo}</div>}
           {q.message && <div className="mt-1 whitespace-pre-wrap text-neutral-500">{q.message}</div>}
           <div className="mt-1 text-xs text-neutral-400">{new Date(q.createdAt).toLocaleString()}</div>
         </div>
@@ -215,15 +284,15 @@ function SpeciesTab({ pw }: { pw: string }) {
             <input className={`${inp} w-full`} value={form.chineseName} onChange={setF("chineseName")} />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-neutral-500">品系 Morph</label>
+            <label className="mb-1 block text-xs text-neutral-500">品系</label>
             <input className={`${inp} w-full`} value={form.morph} onChange={setF("morph")} />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-neutral-500">规格 Size</label>
+            <label className="mb-1 block text-xs text-neutral-500">规格</label>
             <input className={`${inp} w-full`} value={form.size} onChange={setF("size")} />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-neutral-500">价格 USD（如 150 或 3000/pair）</label>
+            <label className="mb-1 block text-xs text-neutral-500">价格（美元，如 150 或 3000/对）</label>
             <input className={`${inp} w-full`} value={form.priceUsd} onChange={setF("priceUsd")} />
           </div>
           <div>
@@ -268,11 +337,11 @@ function SpeciesTab({ pw }: { pw: string }) {
           <thead>
             <tr className="bg-[#06162d] text-left text-[11px] uppercase tracking-wider text-white">
               <th className="px-3 py-2">图片</th>
-              <th className="px-3 py-2">Species</th>
+              <th className="px-3 py-2">物种</th>
               <th className="px-3 py-2">分类</th>
-              <th className="px-3 py-2">Morph</th>
-              <th className="px-3 py-2">Price USD</th>
-              <th className="px-3 py-2">Stock</th>
+              <th className="px-3 py-2">品系</th>
+              <th className="px-3 py-2">价格（美元）</th>
+              <th className="px-3 py-2">库存</th>
               <th className="px-3 py-2">显示价格</th>
               <th className="px-3 py-2">精选</th>
               <th className="px-3 py-2">操作</th>
@@ -398,9 +467,9 @@ function CategoriesTab({ pw }: { pw: string }) {
         {(cats.data ?? []).map((c) => (
           <div key={c.id} className="flex flex-wrap items-center gap-2 border border-neutral-200 p-3 text-sm">
             <code className="bg-neutral-100 px-2 py-1 text-xs">{c.slug}</code>
-            <input defaultValue={c.labelEn} className={`${inp} w-36`} placeholder="English"
+            <input defaultValue={c.labelEn} className={`${inp} w-36`} placeholder="英文分类名"
               onBlur={(e) => e.target.value !== c.labelEn && upsert.mutate({ password: pw, id: c.id, slug: c.slug, labelEn: e.target.value, labelCn: c.labelCn })} />
-            <input defaultValue={c.labelCn} className={`${inp} w-28`} placeholder="中文"
+            <input defaultValue={c.labelCn} className={`${inp} w-28`} placeholder="中文分类名"
               onBlur={(e) => e.target.value !== c.labelCn && upsert.mutate({ password: pw, id: c.id, slug: c.slug, labelEn: c.labelEn, labelCn: e.target.value })} />
             <input defaultValue={c.blurbEn ?? ""} className={`${inp} flex-1`} placeholder="英文简介"
               onBlur={(e) => e.target.value !== (c.blurbEn ?? "") && upsert.mutate({ password: pw, id: c.id, slug: c.slug, labelEn: c.labelEn, labelCn: c.labelCn, blurbEn: e.target.value, blurbCn: c.blurbCn ?? "" })} />
@@ -422,8 +491,8 @@ function CategoriesTab({ pw }: { pw: string }) {
         <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">新增分类</div>
         <div className="flex flex-wrap gap-2">
           <input className={`${inp} w-32`} placeholder="slug *" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} />
-          <input className={`${inp} w-36`} placeholder="英文名 *" value={form.labelEn} onChange={(e) => setForm({ ...form, labelEn: e.target.value })} />
-          <input className={`${inp} w-28`} placeholder="中文名 *" value={form.labelCn} onChange={(e) => setForm({ ...form, labelCn: e.target.value })} />
+          <input className={`${inp} w-36`} placeholder="英文分类名 *" value={form.labelEn} onChange={(e) => setForm({ ...form, labelEn: e.target.value })} />
+          <input className={`${inp} w-28`} placeholder="中文分类名 *" value={form.labelCn} onChange={(e) => setForm({ ...form, labelCn: e.target.value })} />
           <input type="number" className={`${inp} w-16`} placeholder="排序" value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })} />
           <button
             onClick={() => {
@@ -490,6 +559,26 @@ function SettingsTab({ pw }: { pw: string }) {
           </div>
         </div>
       ))}
+
+      <div className="border-t border-neutral-200 pt-5">
+        <label className="mb-1 block text-xs uppercase tracking-wider text-neutral-500">
+          统计代码（百度统计 / Google Analytics，粘贴完整 script 代码）
+        </label>
+        <textarea
+          className="h-28 w-full border border-neutral-300 px-3 py-2 font-mono text-xs outline-none focus:border-[#c9a227]"
+          value={vals["head_code"] ?? ""}
+          placeholder="<!-- 在此粘贴统计平台给的代码 -->"
+          onChange={(e) => setVals((v) => ({ ...v, head_code: e.target.value }))}
+        />
+        <button
+          onClick={() => setSetting.mutate({ password: pw, key: "head_code", value: vals["head_code"] ?? "" })}
+          disabled={setSetting.isPending}
+          className="mt-2 border border-[#06162d] px-4 py-1.5 text-xs font-semibold uppercase tracking-wider hover:bg-[#06162d] hover:text-white disabled:opacity-50"
+        >
+          保存统计代码
+        </button>
+        <p className="mt-1 text-xs text-neutral-400">保存后全站页面自动加载该代码，1 分钟内生效。</p>
+      </div>
     </div>
   );
 }
@@ -544,7 +633,7 @@ export default function Admin() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
       <div className="flex items-center justify-between">
-        <h1 className="font-serif-display text-3xl font-bold">管理后台 Admin</h1>
+        <h1 className="font-serif-display text-3xl font-bold">管理后台</h1>
         <button
           onClick={() => {
             sessionStorage.removeItem("psj-admin");

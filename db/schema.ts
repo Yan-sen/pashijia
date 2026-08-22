@@ -60,3 +60,12 @@ export const inquiries = mysqlTable("inquiries", {
     .default("new"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+export const inquiryItems = mysqlTable("inquiry_items", {
+  id: serial("id").primaryKey(),
+  inquiryId: bigint("inquiry_id", { mode: "number", unsigned: true }).notNull(),
+  speciesId: bigint("species_id", { mode: "number", unsigned: true }),
+  label: varchar("label", { length: 400 }).notNull(), // 物种快照：学名·品系·规格
+  quantity: varchar("quantity", { length: 100 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});

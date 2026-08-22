@@ -124,6 +124,23 @@ const dict = {
     "感谢您的询盘。我们的出口团队将在一个工作日内回复报价及贵国的许可可行性评估。紧急事项请联系 WhatsApp：+86 131 0743 7859。",
   ],
   "i.continue": ["Continue browsing", "继续浏览"],
+  // basket
+  "t.pick": ["( Select )", "（勾选）"],
+  "cat.go": ["Go", "搜索"],
+  "b.title": ["Inquiry List", "询盘篮"],
+  "b.empty": ["No species selected yet.", "尚未勾选物种。"],
+  "b.submit": ["Submit Inquiry", "提交询盘"],
+  "b.remove": ["Remove", "移除"],
+  "b.qty": ["Qty", "数量"],
+  "b.qtyPh": ["e.g. 10 pairs", "例如：10 对"],
+  "b.added": ["Added to inquiry list", "已加入询盘篮"],
+  "d.addToBasket": ["Add to Inquiry List", "加入询盘篮"],
+  "d.inBasket": ["In Inquiry List ✓", "已在询盘篮 ✓"],
+  "i.selected": ["Selected species", "已选物种"],
+  "i.perItemQty": ["Quantity per species", "各物种数量"],
+  "i.orPick": ["Tip: tick species in the catalog to add them here.", "提示：可在物种目录勾选物种加入此处。"],
+  // whatsapp float
+  "wa.label": ["Chat on WhatsApp", "WhatsApp 咨询"],
   // shipping
   "s.title": ["Shipping & Packing", "运输与包装"],
   "s.sub": ["Professional live animal air freight, compliant with IATA Live Animals Regulations (LAR).", "专业活体动物航空运输，符合 IATA 活体动物规章（LAR）。"],

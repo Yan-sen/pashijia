@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router";
 import { trpc } from "@/providers/trpc";
+import { useBasket } from "@/providers/basket";
 
 import { useLang, useT } from "@/i18n";
 
@@ -9,6 +10,7 @@ export default function SpeciesDetail() {
   const { id } = useParams<{ id: string }>();
   const item = trpc.species.byId.useQuery({ id: Number(id) }, { enabled: !!id });
   const cats = trpc.categories.list.useQuery();
+  const basket = useBasket();
 
   if (item.isLoading)
     return <div className="mx-auto max-w-6xl px-4 py-20 text-center text-neutral-400">{t("home.loading")}</div>;
@@ -93,9 +95,29 @@ export default function SpeciesDetail() {
             <p className="mt-2 text-xs text-neutral-400">
               {t("d.priceSub")}
             </p>
+            <button
+              onClick={() =>
+                basket.toggle({
+                  id: s.id,
+                  latinName: s.latinName,
+                  chineseName: s.chineseName,
+                  morph: s.morph,
+                  size: s.size,
+                  priceUsd: s.priceUsd,
+                  showPrice: s.showPrice,
+                })
+              }
+              className={`mt-6 block w-full py-3 text-center text-sm font-semibold uppercase tracking-wider ${
+                basket.has(s.id)
+                  ? "bg-[#c9a227] text-[#06162d] hover:bg-[#d8b64a]"
+                  : "bg-[#06162d] text-white hover:bg-[#0d2342]"
+              }`}
+            >
+              {basket.has(s.id) ? t("d.inBasket") : t("d.addToBasket")}
+            </button>
             <Link
               to={`/inquiry?species=${s.id}`}
-              className="mt-6 block bg-[#06162d] py-3 text-center text-sm font-semibold uppercase tracking-wider text-white hover:bg-[#0d2342]"
+              className="mt-3 block border border-[#06162d] py-3 text-center text-sm font-semibold uppercase tracking-wider hover:bg-[#06162d] hover:text-white"
             >
               {s.showPrice && s.priceUsd ? t("d.placeInquiry") : t("d.requestQuote")}
             </Link>

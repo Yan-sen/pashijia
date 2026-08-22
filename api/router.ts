@@ -118,9 +118,21 @@ export const appRouter = createRouter({
           quantity: z.string().optional(),
           permitInfo: z.string().optional(),
           message: z.string().optional(),
+          items: z
+            .array(
+              z.object({
+                speciesId: z.number().optional(),
+                label: z.string().min(1),
+                quantity: z.string().optional(),
+              })
+            )
+            .optional(),
         })
       )
-      .mutation(({ input }) => createInquiry(input)),
+      .mutation(({ input }) => {
+        const { items, ...data } = input;
+        return createInquiry(data, items ?? []);
+      }),
     list: publicQuery
       .input(z.object({ password: z.string() }))
       .query(({ input }) => {
