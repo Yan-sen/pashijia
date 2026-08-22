@@ -131,7 +131,20 @@ export const appRouter = createRouter({
       )
       .mutation(({ input }) => {
         const { items, ...data } = input;
-        return createInquiry(data, items ?? []);
+        return createInquiry(data, items ?? []).then(async (r) => {
+          const { notifyNewInquiry } = await import("./queries/notify");
+          void notifyNewInquiry({
+            id: r.id,
+            name: data.name,
+            email: data.email,
+            country: data.country,
+            buyerType: data.buyerType,
+            permitInfo: data.permitInfo,
+            message: data.message,
+            items: (items ?? []).map((i) => ({ label: i.label, quantity: i.quantity })),
+          });
+          return r;
+        });
       }),
     list: publicQuery
       .input(z.object({ password: z.string() }))
@@ -154,6 +167,16 @@ export const appRouter = createRouter({
       .mutation(({ input }) => {
         assertAdmin(input.password);
         return upsertSetting(input.key, input.value);
+      }),
+    sendTestMail: publicQuery
+      .input(z.object({ password: z.string() }))
+      .mutation(async ({ input }) => {
+        assertAdmin(input.password);
+        const s = await getAllSettings();
+        if (!s.notify_email) throw new TRPCError({ code: "BAD_REQUEST", message: "请先填写接收通知的邮箱" });
+        const { sendTestMail } = await import("./queries/notify");
+        await sendTestMail(s.notify_email);
+        return { ok: true };
       }),
   }),
 

@@ -579,6 +579,86 @@ function SettingsTab({ pw }: { pw: string }) {
         </button>
         <p className="mt-1 text-xs text-neutral-400">保存后全站页面自动加载该代码，1 分钟内生效。</p>
       </div>
+
+      <NotifySettings pw={pw} vals={vals} setVals={setVals} setSetting={setSetting} />
+    </div>
+  );
+}
+
+// ---------- 询盘邮件通知 ----------
+const NOTIFY_FIELDS: { key: string; label: string; ph: string; pwd?: boolean }[] = [
+  { key: "smtp_host", label: "SMTP 服务器", ph: "QQ 邮箱：smtp.qq.com ・ 163：smtp.163.com" },
+  { key: "smtp_port", label: "SMTP 端口", ph: "465（推荐）或 587" },
+  { key: "smtp_user", label: "发信邮箱账号", ph: "yourname@qq.com" },
+  { key: "smtp_pass", label: "SMTP 授权码（不是登录密码）", ph: "邮箱设置里生成的授权码", pwd: true },
+  { key: "notify_email", label: "接收通知的邮箱", ph: "询盘通知发到这个邮箱" },
+];
+
+function NotifySettings({
+  pw,
+  vals,
+  setVals,
+  setSetting,
+}: {
+  pw: string;
+  vals: Record<string, string>;
+  setVals: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  setSetting: ReturnType<typeof trpc.settings.set.useMutation>;
+}) {
+  const testMail = trpc.settings.sendTestMail.useMutation();
+  const [msg, setMsg] = useState("");
+
+  const saveAll = () =>
+    Promise.all(
+      NOTIFY_FIELDS.map((f) =>
+        setSetting.mutateAsync({ password: pw, key: f.key, value: vals[f.key] ?? "" })
+      )
+    ).then(() => setMsg("✅ 已保存"));
+
+  return (
+    <div className="border-t border-neutral-200 pt-5">
+      <div className="mb-1 text-sm font-semibold">询盘邮件通知</div>
+      <p className="mb-4 text-xs text-neutral-500">
+        填好 SMTP 配置后，每个新询盘会实时发邮件到接收邮箱。授权码在邮箱网页版「设置 → 账户 → POP3/SMTP」里开启生成。
+      </p>
+      <div className="space-y-3">
+        {NOTIFY_FIELDS.map((f) => (
+          <div key={f.key}>
+            <label className="mb-1 block text-xs uppercase tracking-wider text-neutral-500">{f.label}</label>
+            <input
+              type={f.pwd ? "password" : "text"}
+              className="w-full border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-[#c9a227]"
+              value={vals[f.key] ?? ""}
+              placeholder={f.ph}
+              onChange={(e) => setVals((v) => ({ ...v, [f.key]: e.target.value }))}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 flex items-center gap-3">
+        <button
+          onClick={saveAll}
+          disabled={setSetting.isPending}
+          className="bg-[#06162d] px-5 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-[#0d2342] disabled:opacity-50"
+        >
+          保存通知配置
+        </button>
+        <button
+          onClick={() =>
+            saveAll().then(() =>
+              testMail.mutateAsync({ password: pw }).then(
+                () => setMsg("✅ 测试邮件已发送，请查收（留意垃圾邮件）"),
+                (e) => setMsg(`❌ 发送失败：${e.message}`)
+              )
+            )
+          }
+          disabled={testMail.isPending || setSetting.isPending}
+          className="border border-[#06162d] px-5 py-2 text-xs font-semibold uppercase tracking-wider hover:bg-[#06162d] hover:text-white disabled:opacity-50"
+        >
+          {testMail.isPending ? "发送中…" : "保存并发送测试邮件"}
+        </button>
+      </div>
+      {msg && <p className="mt-2 text-sm text-neutral-600">{msg}</p>}
     </div>
   );
 }
