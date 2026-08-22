@@ -143,6 +143,12 @@ export const appRouter = createRouter({
             message: data.message,
             items: (items ?? []).map((i) => ({ label: i.label, quantity: i.quantity })),
           });
+          const { sendBuyerAutoReply } = await import("./queries/notify");
+          void sendBuyerAutoReply({
+            name: data.name,
+            email: data.email,
+            items: (items ?? []).map((i) => ({ label: i.label, quantity: i.quantity })),
+          });
           return r;
         });
       }),

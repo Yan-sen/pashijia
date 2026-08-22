@@ -54,6 +54,57 @@ export async function notifyNewInquiry(info: {
   }
 }
 
+export async function sendBuyerAutoReply(info: {
+  name: string;
+  email: string;
+  items: { label: string; quantity?: string }[];
+}) {
+  try {
+    const s = await getAllSettings();
+    const { smtp_host, smtp_port, smtp_user, smtp_pass } = s;
+    if (!smtp_host || !smtp_user || !smtp_pass) return;
+    const port = Number(smtp_port || 465);
+    const transporter = nodemailer.createTransport({
+      host: smtp_host,
+      port,
+      secure: port === 465,
+      auth: { user: smtp_user, pass: smtp_pass },
+      connectionTimeout: 8000,
+    });
+    const itemsHtml = info.items.length
+      ? `<ul>${info.items.map((i) => `<li>${i.label}${i.quantity ? ` — Qty: ${i.quantity}` : ""}</li>`).join("")}</ul>`
+      : "";
+    await transporter.sendMail({
+      from: `"PASHIJIA Export" <${smtp_user}>`,
+      to: info.email,
+      subject: "Your inquiry has been received — PASHIJIA 爬世家",
+      html: `
+        <div style="font-family:Georgia,serif;max-width:560px;color:#06162d">
+          <h2>Thank you, ${info.name}!</h2>
+          <p style="font-family:sans-serif;line-height:1.7">
+            We have received your inquiry${info.items.length ? " for the following species" : ""}:
+          </p>
+          ${itemsHtml}
+          <p style="font-family:sans-serif;line-height:1.7">
+            Our export team will reply within <b>one business day</b> with a quotation
+            and a permit-feasibility assessment for your country.
+          </p>
+          <p style="font-family:sans-serif;line-height:1.7">
+            For urgent matters, contact us directly:<br>
+            WhatsApp: <b>+86 131 0743 7859</b><br>
+            Email: <b>export@pashijia.com</b>
+          </p>
+          <p style="font-family:sans-serif;color:#888;font-size:12px">
+            Henan Pashijia Snake Industry Co., Ltd. — Licensed CITES exporter, China.
+          </p>
+        </div>`,
+    });
+    console.log(`[notify] auto-reply sent to ${info.email}`);
+  } catch (e) {
+    console.error(`[notify] auto-reply failed:`, e);
+  }
+}
+
 export async function sendTestMail(to: string) {
   const s = await getAllSettings();
   const { smtp_host, smtp_port, smtp_user, smtp_pass } = s;
