@@ -9,10 +9,10 @@ import {
 } from "./queries/categories";
 import { createSpecies, deleteSpecies } from "./queries/species";
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "911911";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "";
 
 function assertAdmin(password?: string) {
-  if (password !== ADMIN_PASSWORD) {
+  if (!ADMIN_PASSWORD || password !== ADMIN_PASSWORD) {
     throw new TRPCError({ code: "UNAUTHORIZED", message: "Wrong password" });
   }
 }
@@ -121,7 +121,12 @@ export const appRouter = createRouter({
         })
       )
       .mutation(({ input }) => createInquiry(input)),
-    list: publicQuery.query(() => listInquiries()),
+    list: publicQuery
+      .input(z.object({ password: z.string() }))
+      .query(({ input }) => {
+        assertAdmin(input.password);
+        return listInquiries();
+      }),
     updateStatus: publicQuery
       .input(z.object({ password: z.string(), id: z.number(), status: z.string() }))
       .mutation(({ input }) => {

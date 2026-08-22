@@ -20,7 +20,7 @@ const inp =
 // ---------- 询盘 ----------
 function InquiriesTab({ pw }: { pw: string }) {
   const utils = trpc.useUtils();
-  const inquiries = trpc.inquiries.list.useQuery();
+  const inquiries = trpc.inquiries.list.useQuery({ password: pw });
   const setStatus = trpc.inquiries.updateStatus.useMutation({
     onSuccess: () => utils.inquiries.list.invalidate(),
   });
