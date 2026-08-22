@@ -100,9 +100,6 @@ export default function Home() {
       <section className="mx-auto max-w-6xl px-4 pb-16">
         <div className="mb-6 flex items-end justify-between">
           <h2 className="font-serif-display text-2xl font-bold">{t("home.featured")}</h2>
-          <span className="text-xs uppercase tracking-wider text-neutral-400">
-            {t("home.priceNote")}
-          </span>
         </div>
         {featured.data ? (
           <SpeciesTable rows={featured.data} />
