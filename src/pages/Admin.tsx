@@ -203,6 +203,8 @@ const SETTING_LABELS: Record<(typeof FOOTER_KEYS)[number], { label: string; fall
   footer_a2: { label: "服务保障 第 2 行", fallback: "Live Arrival Guarantee" },
   footer_a3: { label: "服务保障 第 3 行", fallback: "Expert packing & air transport" },
   footer_a4: { label: "服务保障 第 4 行", fallback: "Exported to 20+ countries and regions" },
+  social_facebook: { label: "Facebook 主页链接", fallback: "https://facebook.com/你的主页" },
+  social_instagram: { label: "Instagram 主页链接", fallback: "https://instagram.com/你的账号" },
 };
 
 function SettingsTab({ pw }: { pw: string }) {

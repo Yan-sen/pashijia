@@ -23,6 +23,8 @@ export const FOOTER_KEYS = [
   "footer_a2",
   "footer_a3",
   "footer_a4",
+  "social_facebook",
+  "social_instagram",
 ] as const;
 
 export function useSiteSettings() {
@@ -72,7 +74,7 @@ function PageTitle() {
       [/^\/admin/, "PASHIJIA — 管理后台"],
     ];
     const hit = map.find(([re]) => re.test(loc.pathname));
-    document.title = hit?.[1] ?? "PASHIJIA — Licensed CITES Reptile Exporter · 爬世家";
+    document.title = hit?.[1] ?? "PASHIJIA — Reptile Export China | CITES Captive-Bred Reptiles Wholesale · 爬世家";
   }, [loc.pathname, t]);
   return null;
 }
@@ -99,6 +101,29 @@ function HeadCodeInjector() {
     });
   }, [q.data]);
   return null;
+}
+
+function SocialLinks() {
+  const st = useSiteSettings();
+  const fb = st("social_facebook", "");
+  const ig = st("social_instagram", "");
+  if (!fb && !ig) return null;
+  return (
+    <div className="mt-4 flex items-center gap-3">
+      {fb && (
+        <a href={fb} target="_blank" rel="noreferrer" title="Facebook"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-neutral-300 hover:border-[#c9a227] hover:text-[#c9a227]">
+          <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.5-3.89 3.78-3.89 1.09 0 2.24.2 2.24.2v2.46H15.2c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0 0 22 12z"/></svg>
+        </a>
+      )}
+      {ig && (
+        <a href={ig} target="_blank" rel="noreferrer" title="Instagram"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-neutral-300 hover:border-[#c9a227] hover:text-[#c9a227]">
+          <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 3.25.15 4.77 1.69 4.92 4.92.06 1.27.07 1.65.07 4.85 0 3.2-.01 3.58-.07 4.85-.15 3.23-1.66 4.77-4.92 4.92-1.27.06-1.64.07-4.85.07-3.2 0-3.58-.01-4.85-.07-3.26-.15-4.77-1.7-4.92-4.92-.06-1.27-.07-1.64-.07-4.85 0-3.2.01-3.58.07-4.85C2.38 3.92 4.04 2.38 7.15 2.23 8.42 2.18 8.8 2.16 12 2.16zm0 3.68a6.16 6.16 0 1 0 0 12.32 6.16 6.16 0 0 0 0-12.32zm0 10.16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.4-11.85a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88z"/></svg>
+        </a>
+      )}
+    </div>
+  );
 }
 
 function LangToggle() {  const { lang, toggle } = useLang();
@@ -191,6 +216,7 @@ export default function Layout() {
               {BRAND.sloganCn}
             </p>
             <p className="mt-1 text-xs text-neutral-400">{BRAND.slogan}.</p>
+            <SocialLinks />
           </div>
           <FooterText />
         </div>
