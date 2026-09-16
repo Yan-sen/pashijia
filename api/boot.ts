@@ -29,5 +29,13 @@ if (env.isProduction) {
   const port = parseInt(process.env.PORT || "3000");
   serve({ fetch: app.fetch, port }, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    // 启动后后台跑一次预渲染快照，不阻塞服务
+    import("node:child_process").then(({ spawn }) => {
+      const p = spawn(process.execPath, ["scripts/prerender.mjs"], {
+        stdio: "inherit",
+        env: { ...process.env, CHROME_PATH: process.env.CHROME_PATH || "/usr/bin/chromium" },
+      });
+      p.on("error", (e) => console.error("[prerender] 启动失败:", e.message));
+    });
   });
 }

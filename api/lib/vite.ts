@@ -8,13 +8,20 @@ type App = Hono<{ Bindings: HttpBindings }>;
 
 export function serveStaticFiles(app: App) {
   const distPath = path.resolve(import.meta.dirname, "../dist/public");
+  const prerenderPath = path.join(distPath, "__prerender");
+
+  const snapName = (p: string) =>
+    (p === "/" ? "index" : p.replace(/^\//, "").replace(/\//g, "_")) + ".html";
 
   app.use("*", serveStatic({ root: "./dist/public" }));
 
   app.notFound((c) => {
-    // SPA 回退：非 API 的 GET 请求一律返回 index.html（状态 200），
-    // 让爬虫和 SEO 工具无论 Accept 头如何都能拿到页面
+    // SPA 回退：非 API 的 GET 请求优先返回预渲染快照（SEO），否则返回 index.html
     if (c.req.method === "GET" && !c.req.path.startsWith("/api/")) {
+      const snap = path.join(prerenderPath, snapName(c.req.path));
+      try {
+        if (fs.existsSync(snap)) return c.html(fs.readFileSync(snap, "utf-8"));
+      } catch {}
       const indexPath = path.resolve(distPath, "index.html");
       const content = fs.readFileSync(indexPath, "utf-8");
       return c.html(content);
