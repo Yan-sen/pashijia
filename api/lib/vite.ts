@@ -13,6 +13,16 @@ export function serveStaticFiles(app: App) {
   const snapName = (p: string) =>
     (p === "/" ? "index" : p.replace(/^\//, "").replace(/\//g, "_")) + ".html";
 
+  // 首页特判：dist 里有真实 index.html，会被 serveStatic 直接命中而跳过快照
+  app.get("/", (c) => {
+    try {
+      const snap = path.join(prerenderPath, "index.html");
+      if (fs.existsSync(snap)) return c.html(fs.readFileSync(snap, "utf-8"));
+    } catch {}
+    const indexPath = path.resolve(distPath, "index.html");
+    return c.html(fs.readFileSync(indexPath, "utf-8"));
+  });
+
   app.use("*", serveStatic({ root: "./dist/public" }));
 
   app.notFound((c) => {
