@@ -92,7 +92,7 @@ export async function sendBuyerAutoReply(info: {
           <p style="font-family:sans-serif;line-height:1.7">
             For urgent matters, contact us directly:<br>
             WhatsApp: <b>+86 131 0743 7859</b><br>
-            Email: <b>export@pashijia.com</b>
+            Email: <b>2311332944@qq.com</b>
           </p>
           <p style="font-family:sans-serif;color:#888;font-size:12px">
             Henan Pashijia Snake Industry Co., Ltd. — Licensed CITES exporter, China.

@@ -7,6 +7,6 @@ export const BRAND = {
   sloganCn: "爬世家 · 让爬宠走向世界每一家",
   phone: "+86 131 0743 7859",
   whatsapp: "+86 13107437859",
-  email: "export@pashijia.com",
+  email: "2311332944@qq.com",
   address: "No. 196 Jinpen Jiuqujing Road, Baiyun District, Guangzhou, China",
 };
