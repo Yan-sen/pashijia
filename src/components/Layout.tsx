@@ -203,7 +203,7 @@ export default function Layout() {
       <PageTitle />
 
       <footer className="mt-20 border-t-2 border-[#06162d] bg-[#06162d] text-white">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:grid-cols-3">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:grid-cols-4">
           <div>
             <div className="flex items-center gap-3">
               <img src={logo} alt="" className="h-14 w-14 rounded-full bg-white object-contain p-1" />
@@ -219,6 +219,13 @@ export default function Layout() {
             <SocialLinks />
           </div>
           <FooterText />
+          <div className="text-sm leading-7 text-neutral-300">
+            <div className="mb-2 text-xs uppercase tracking-[0.2em] text-[#c9a227]">Resources</div>
+            <Link to="/reptile-export-china" className="block hover:text-[#c9a227]">Reptile Export from China</Link>
+            <Link to="/cites-reptile-export" className="block hover:text-[#c9a227]">CITES Export Guide</Link>
+            <Link to="/chinese-native-reptiles" className="block hover:text-[#c9a227]">Chinese Native Reptiles</Link>
+            <Link to="/wholesale-reptiles" className="block hover:text-[#c9a227]">Wholesale Reptiles</Link>
+          </div>
         </div>
         <div className="border-t border-white/10 py-4 text-center text-xs text-neutral-500">
           © {new Date().getFullYear()} {BRAND.nameFull}. <T k="f.rights" />
