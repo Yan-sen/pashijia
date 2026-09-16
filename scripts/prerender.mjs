@@ -24,7 +24,10 @@ async function getSpeciesIds() {
 
 async function main() {
   fs.mkdirSync(OUT, { recursive: true });
-  const staticRoutes = ["/", "/species", "/availability", "/shipping", "/compliance", "/about", "/inquiry"];
+  const staticRoutes = [
+    "/", "/species", "/availability", "/shipping", "/compliance", "/about", "/inquiry",
+    "/reptile-export-china", "/cites-reptile-export", "/chinese-native-reptiles", "/wholesale-reptiles",
+  ];
   const ids = await getSpeciesIds();
   const routes = [...staticRoutes, ...ids.map((id) => `/species/${id}`)];
   console.log(`[prerender] 开始渲染 ${routes.length} 个页面…`);

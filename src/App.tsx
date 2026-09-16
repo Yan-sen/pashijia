@@ -9,6 +9,10 @@ import Compliance from "./pages/Compliance";
 import About from "./pages/About";
 import Inquiry from "./pages/Inquiry";
 import Admin from "./pages/Admin";
+import ReptileExportChina from "./pages/landing/ReptileExportChina";
+import CitesReptileExport from "./pages/landing/CitesReptileExport";
+import ChineseNativeReptiles from "./pages/landing/ChineseNativeReptiles";
+import WholesaleReptiles from "./pages/landing/WholesaleReptiles";
 
 export default function App() {
   return (
@@ -23,6 +27,10 @@ export default function App() {
         <Route path="/about" element={<About />} />
         <Route path="/inquiry" element={<Inquiry />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/reptile-export-china" element={<ReptileExportChina />} />
+        <Route path="/cites-reptile-export" element={<CitesReptileExport />} />
+        <Route path="/chinese-native-reptiles" element={<ChineseNativeReptiles />} />
+        <Route path="/wholesale-reptiles" element={<WholesaleReptiles />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
