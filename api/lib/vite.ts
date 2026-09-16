@@ -12,12 +12,13 @@ export function serveStaticFiles(app: App) {
   app.use("*", serveStatic({ root: "./dist/public" }));
 
   app.notFound((c) => {
-    const accept = c.req.header("accept") ?? "";
-    if (!accept.includes("text/html")) {
-      return c.json({ error: "Not Found" }, 404);
+    // SPA 回退：非 API 的 GET 请求一律返回 index.html（状态 200），
+    // 让爬虫和 SEO 工具无论 Accept 头如何都能拿到页面
+    if (c.req.method === "GET" && !c.req.path.startsWith("/api/")) {
+      const indexPath = path.resolve(distPath, "index.html");
+      const content = fs.readFileSync(indexPath, "utf-8");
+      return c.html(content);
     }
-    const indexPath = path.resolve(distPath, "index.html");
-    const content = fs.readFileSync(indexPath, "utf-8");
-    return c.html(content);
+    return c.json({ error: "Not Found" }, 404);
   });
 }
